@@ -1,5 +1,3 @@
 {
-  "itemGroup.netherspawn": "Example Mod Tab",
-  "block.netherspawn.example_block": "Example Block",
-  "item.netherspawn.example_item": "Example Item"
+  "itemGroup.netherspawn": "NetherSpawn"
 }

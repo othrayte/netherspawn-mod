@@ -26,6 +26,11 @@ jobs:
       run: ./gradlew runData
     - name: Build Mod
       run: ./gradlew build
+    - name: Archive build results
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-results
+        path: build/libs/
 
   dependency-submission:
     runs-on: ubuntu-latest

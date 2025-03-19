@@ -18,6 +18,13 @@ repositories {
     }
 }
 
+if (hasProperty('develocity')) {
+    develocity {
+        buildScan.termsOfUseUrl = 'https://gradle.com/terms-of-service'
+        buildScan.termsOfUseAgree = 'yes'
+    }
+}
+
 base {
     archivesName = mod_id
 }

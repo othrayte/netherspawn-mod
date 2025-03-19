@@ -1,12 +1,13 @@
 plugins {
     id 'java-library'
-    id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.78'
     id 'org.jetbrains.kotlin.jvm' version '2.0.0'
+    id 'pl.allegro.tech.build.axion-release' version "1.18.7"
+    id "me.modmuss50.mod-publish-plugin" version "0.8.4"
 }
 
-version = mod_version
+version = scmVersion.version
 group = mod_group_id
 
 repositories {
@@ -142,7 +143,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_id                 : mod_id,
                              mod_name               : mod_name,
                              mod_license            : mod_license,
-                             mod_version            : mod_version,
+                             mod_version            : version,
                              mod_authors            : mod_authors,
                              mod_description        : mod_description]
     inputs.properties replaceProperties
@@ -157,17 +158,18 @@ sourceSets.main.resources.srcDir generateModMetadata
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask generateModMetadata
 
-// Example configuration to allow publishing using the maven-publish plugin
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
+publishMods {
+    file = jar.archiveFile
+    changelog = "# Markdown changelog content"
+    type = ALPHA
+    modLoaders.add("forge")
+    displayName = version.map { "NetherSpawn $it" }
+
+    github {
+        accessToken = providers.environmentVariable("GITHUB_TOKEN")
+        repository = "othrayte/netherspawn-mod"
+        commitish = providers.environmentVariable("GITHUB_SHA").orElse("main")
+        tagName = version.map { "v$it" }
     }
 }
 

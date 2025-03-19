@@ -1,3 +1,10 @@
+import pl.allegro.tech.build.axion.release.BaseAxionTask
+import pl.allegro.tech.build.axion.release.infrastructure.git.GitRepository
+
+import java.util.regex.Pattern
+
+import static java.util.stream.Collectors.toList
+
 plugins {
     id 'java-library'
     id 'idea'
@@ -5,6 +12,10 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '2.0.0'
     id 'pl.allegro.tech.build.axion-release' version "1.18.7"
     id "me.modmuss50.mod-publish-plugin" version "0.8.4"
+}
+
+scmVersion {
+    unshallowRepoOnCI = true
 }
 
 version = scmVersion.version
@@ -158,9 +169,47 @@ sourceSets.main.resources.srcDir generateModMetadata
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask generateModMetadata
 
+abstract class GenerateChangelog extends BaseAxionTask {
+    @OutputFile
+    abstract RegularFileProperty getChangelog()
+
+    private List<Pattern> releaseTagPatterns() {
+        // This is a copy of the logic in VersionResolver::readVersions
+        def tagProperties = resolutionContext().rules().tag
+        tagProperties.getAllPrefixes().stream()
+                .map(prefix -> prefix.isEmpty() ? "" : prefix + tagProperties.getVersionSeparator())
+                .map(pattern -> Pattern.compile("^" + pattern + ".*"))
+                .collect(toList())
+    }
+
+    @TaskAction
+    void generate() {
+        def repository = resolutionContext().repository()
+        def git = (repository as GitRepository).jgitRepository
+        def sinceCommit = repository.latestTags(releaseTagPatterns(), repository.currentPosition().revision)
+        def since = git.repository.resolve(sinceCommit.commitId)
+        def head = git.repository.resolve("HEAD")
+        String changelogString = "## Changelog\n" + git.log().addRange(since, head).call().collect { commit ->
+            def commitHash = commit.getId().name().take(7)
+            def commitMessage = commit.getShortMessage()
+            def commitAuthor = commit.getAuthorIdent().getName()
+            " * $commitHash - $commitMessage ($commitAuthor)"
+        }.join('\n')
+        getChangelog().get().asFile.withWriter { it.write(changelogString) }
+    }
+}
+
+tasks.register("generateChangelog", GenerateChangelog) {
+    group = "release"
+    description = "Generates a changelog since the previous version"
+    changelog.convention(layout.buildDirectory.file("changelog.txt"))
+}
+
 publishMods {
     file = jar.archiveFile
-    changelog = "# Markdown changelog content"
+
+    changelog.set(generateChangelog.changelog.map{ it.getAsFile().text })
+
     type = ALPHA
     modLoaders.add("forge")
     displayName = version.map { "NetherSpawn $it" }

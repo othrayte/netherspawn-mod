@@ -32,12 +32,15 @@ or respawn anchor will spawn in the Nether.
 
 - [x] New players spawn in the Nether
 - [x] Players that die without a bed or respawn anchor spawn in the Nether
-- [ ] Configuration options for spawn behavior - Link to issue TBA
-- [ ] Checks for bad spawn locations - Link to issue TBA  
+- [ ] Configuration options for spawn behavior - #1
+- [ ] Use block tags for portal blocks and portal degradation blocks - Link to issue #2
+- [ ] Spawn at respawn anchor if bed is missing on overworld death, configurable - #3
+- [ ] New players spawn at respawn anchor if one is available - #4
+- [ ] Checks for bad spawn locations - #5
       E.g. lava lake islands, enclosed spaces, etc.
-- [ ] Choice of type of spawn location at world start - Link to issue TBA  
+- [ ] Choice of type of spawn location at world start - #6  
       E.g. Easy: portal in crimson forest near blackstone, Maddening: lava lake island
-- [ ] Support for modded nether biomes - Link to issue TBA
+- [ ] Support for modded nether biomes - #7
 
 ## License
 

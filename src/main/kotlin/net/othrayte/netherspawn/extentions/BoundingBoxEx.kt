@@ -84,4 +84,14 @@ object BoundingBoxEx {
             }
         }
     }
+
+    // Expand the bounding box by the given amount in all directions
+    fun BoundingBox.expandBy(amount: Int): BoundingBox {
+        return BoundingBox(minX() - amount, minY() - amount, minZ() - amount, maxX() + amount, maxY() + amount, maxZ() + amount)
+    }
+
+    // Limit the bounding box to the given range in the Y direction
+    fun BoundingBox.limitY(minY: Int, maxY: Int): BoundingBox {
+        return BoundingBox(minX(), minY().coerceAtLeast(minY), minZ(), maxX(), maxY().coerceAtMost(maxY), maxZ())
+    }
 }

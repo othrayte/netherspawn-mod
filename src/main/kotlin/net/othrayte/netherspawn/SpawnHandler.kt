@@ -21,14 +21,21 @@ object SpawnHandler {
     @SubscribeEvent
     fun onPlayerLogin(event: PlayerEvent.PlayerLoggedInEvent) {
         val player = event.entity
-        if (player is ServerPlayer) {
+        if (player is ServerPlayer && Options.initialSpawnInNether) {
             // Detect if this is the first time we have observed this player logging in
             // If they have a spawn point, then just let them log in normally, otherwise teleport them to the nether as
             // this should be their first login with the mod installed
             if (player.isFirstLogin() && player.respawnPosition == null) {
                 LOGGER.log(Level.INFO, "Detected first login for player ${player.name}, moving to nether spawn")
                 val nether = player.server.getLevel(NETHER)!!
-                val spawnLocation = Nether.locateNetherSpawnNear(BlockPos(0, nether.seaLevel + 5, 0), nether)?.pos
+
+
+                val ruinedPortalSpawn = if (Options.RuinedPortalSpawn.enable) Nether.locateNetherSpawnNear(
+                    BlockPos(0, nether.seaLevel + 5, 0),
+                    nether
+                )
+                else null
+                val spawnLocation = ruinedPortalSpawn?.pos
                     ?: Nether.locateCentralNetherSpawn(
                         nether
                     )
@@ -42,36 +49,56 @@ object SpawnHandler {
     fun onPlayerRespawnPositionEvent(event: PlayerRespawnPositionEvent) {
         val player = event.entity
         // Only handle the case of a server player as this needs to be handled on the server side
-        if (player is ServerPlayer) {
+        if (player is ServerPlayer && Options.respawnInNether) {
             // Check if the player is respawning due to missing bed/respawn anchor or if they have no respawn point
             if (event.originalDimensionTransition.missingRespawnBlock || player.respawnPosition == null) {
                 val server = event.originalDimensionTransition.newLevel.server
                 val nether = server.getLevel(NETHER)!!
 
-                val respawnPos = Nether.locateNetherSpawnNear(BlockPos(0, nether.seaLevel + 5, 0), nether)
+                val searchCenter =
+                    if (Options.RuinedPortalSpawn.closestToDeathLocation && player.serverLevel() == nether) {
+                        player.blockPosition()
+                    } else {
+                        BlockPos(0, nether.seaLevel + 5, 0)
+                    }
+                val respawnPos = if (Options.RuinedPortalSpawn.enable) {
+                    Nether.locateNetherSpawnNear(searchCenter, nether)
+                } else {
+                    null
+                }
 
                 if (respawnPos != null) {
                     event.dimensionTransition =
                         event.originalDimensionTransition.withLocation(nether, respawnPos.pos.bottomCenter)
 
-                    // Make one unsupported obsidian block fall
-                    val structureBlocks = respawnPos.structureBounds.positions()
-                    val obsidianBlocks = structureBlocks.filter { pos ->
-                        nether.getBlockState(pos).`is`(net.neoforged.neoforge.common.Tags.Blocks.OBSIDIANS)
-                    }
-                    val unsupportedObsidian = obsidianBlocks.filter { pos ->
-                        val blockUnder = nether.getBlockState(pos.below())
-                        FallingBlock.isFree(blockUnder)
-                    }.firstOrNull()
-                    if (unsupportedObsidian != null) {
-                        FallingBlockEntity.fall(nether, unsupportedObsidian, nether.getBlockState(unsupportedObsidian))
-                    } else {
-                        // If no unsupported obsidian blocks are found, remove one obsidian block
-                        val obsidianToRemove = obsidianBlocks.shuffled().firstOrNull()
-                        if (obsidianToRemove != null) {
-                            nether.setBlockAndUpdate(obsidianToRemove, Blocks.BLACKSTONE.defaultBlockState())
+                    if (Options.RuinedPortalSpawn.blocksDamagedOnRespawn > 0) {
+                        // Make one unsupported obsidian block fall
+                        val structureBlocks = respawnPos.structureBounds.positions()
+
+                        val obsidianBlocks = structureBlocks.filter { pos ->
+                            nether.getBlockState(pos).`is`(net.neoforged.neoforge.common.Tags.Blocks.OBSIDIANS)
+                        }
+                        val unsupportedObsidian =
+                            if (Options.RuinedPortalSpawn.portalBlocksFallOnDamage) {
+                                obsidianBlocks.filter { pos ->
+                                    val blockUnder = nether.getBlockState(pos.below())
+                                    FallingBlock.isFree(blockUnder)
+                                }.take(Options.RuinedPortalSpawn.blocksDamagedOnRespawn).toList()
+                            } else {
+                                emptyList()
+                            }
+
+                        obsidianBlocks.shuffled()
+                            .take(Options.RuinedPortalSpawn.blocksDamagedOnRespawn - unsupportedObsidian.size)
+                            .forEach {
+                                nether.setBlockAndUpdate(it, Blocks.BLACKSTONE.defaultBlockState())
+                            }
+
+                        unsupportedObsidian.forEach {
+                            FallingBlockEntity.fall(nether, it, nether.getBlockState(it))
                         }
                     }
+
                 } else {
                     val spawnLocation = Nether.locateCentralNetherSpawn(nether)
 

@@ -1,8 +1,10 @@
 package net.othrayte.netherspawn
 
 import net.neoforged.bus.api.SubscribeEvent
+import net.neoforged.fml.ModLoadingContext
 import net.neoforged.fml.common.EventBusSubscriber
 import net.neoforged.fml.common.Mod
+import net.neoforged.fml.config.ModConfig
 import net.neoforged.neoforge.data.event.GatherDataEvent
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -12,6 +14,10 @@ import org.apache.logging.log4j.Logger
 object NetherSpawn {
     const val ID = "netherspawn"
     val LOGGER: Logger = LogManager.getLogger(ID)
+
+    init {
+        ModLoadingContext.get().activeContainer.registerConfig(ModConfig.Type.SERVER, Options.CONFIG_SPEC)
+    }
 
     // Setup datagen
     @SubscribeEvent

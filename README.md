@@ -33,7 +33,7 @@ or respawn anchor will spawn in the Nether.
 - [x] New players spawn in the Nether
 - [x] Players that die without a bed or respawn anchor spawn in the Nether
 - [x] Configuration options for spawn behavior - #1
-- [ ] Use block tags for portal blocks and portal degradation blocks - Link to issue #2
+- [x] Use block tags for portal frame blocks and portal degradation blocks - #2
 - [ ] Spawn at respawn anchor if bed is missing on overworld death, configurable - #3
 - [ ] New players spawn at respawn anchor if one is available - #4
 - [ ] Checks for bad spawn locations - #5

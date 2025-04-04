@@ -26,6 +26,7 @@ object Tags {
 
         // Tag for blocks that can damage the player (not including suffocation)
         val DAMAGES_PLAYER = commonTag("damages_player")
+        val NETHER_PORTAL_FRAME_BLOCKS = netherSpawnTag("nether_portal_frame_blocks")
 
         // Tag provider
         class Provider(
@@ -37,6 +38,7 @@ object Tags {
             // Generates our tags
             override fun addTags(lookupProvider: HolderLookup.Provider) {
                 tag(DAMAGES_PLAYER).add(LAVA, CACTUS, MAGMA_BLOCK).addTag(BlockTags.FIRE)
+                tag(NETHER_PORTAL_FRAME_BLOCKS).addTag(net.neoforged.neoforge.common.Tags.Blocks.OBSIDIANS)
             }
         }
     }

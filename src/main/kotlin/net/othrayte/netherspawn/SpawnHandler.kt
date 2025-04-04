@@ -3,9 +3,13 @@ package net.othrayte.netherspawn
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.item.FallingBlockEntity
+import net.minecraft.world.item.BlockItem
 import net.minecraft.world.level.Level.NETHER
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.FallingBlock
+import net.minecraft.world.level.storage.loot.LootParams
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams
 import net.neoforged.bus.api.SubscribeEvent
 import net.neoforged.fml.common.EventBusSubscriber
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
@@ -15,6 +19,7 @@ import net.othrayte.netherspawn.extentions.BoundingBoxEx.positions
 import net.othrayte.netherspawn.extentions.DimensionTransitionEx.withLocation
 import net.othrayte.netherspawn.extentions.PlayerEx.isFirstLogin
 import org.apache.logging.log4j.Level
+
 
 @EventBusSubscriber(modid = NetherSpawn.ID)
 object SpawnHandler {
@@ -72,15 +77,16 @@ object SpawnHandler {
                         event.originalDimensionTransition.withLocation(nether, respawnPos.pos.bottomCenter)
 
                     if (Options.RuinedPortalSpawn.blocksDamagedOnRespawn > 0) {
-                        // Make one unsupported obsidian block fall
+                        // Make one unsupported portal frame block fall
                         val structureBlocks = respawnPos.structureBounds.positions()
 
-                        val obsidianBlocks = structureBlocks.filter { pos ->
-                            nether.getBlockState(pos).`is`(net.neoforged.neoforge.common.Tags.Blocks.OBSIDIANS)
+                        val portalFrameBlocks = structureBlocks.filter { pos ->
+                            nether.getBlockState(pos).`is`(Tags.Blocks.NETHER_PORTAL_FRAME_BLOCKS)
                         }
-                        val unsupportedObsidian =
+
+                        val unsupportedPortalFrameBlocks =
                             if (Options.RuinedPortalSpawn.portalBlocksFallOnDamage) {
-                                obsidianBlocks.filter { pos ->
+                                portalFrameBlocks.filter { pos ->
                                     val blockUnder = nether.getBlockState(pos.below())
                                     FallingBlock.isFree(blockUnder)
                                 }.take(Options.RuinedPortalSpawn.blocksDamagedOnRespawn).toList()
@@ -88,13 +94,23 @@ object SpawnHandler {
                                 emptyList()
                             }
 
-                        obsidianBlocks.shuffled()
-                            .take(Options.RuinedPortalSpawn.blocksDamagedOnRespawn - unsupportedObsidian.size)
+                        val degradationLootTable = nether.server.reloadableRegistries().getLootTable(LootTables.NETHER_PORTAL_FRAME_DEGRADATION)
+                        portalFrameBlocks.shuffled()
+                            .take(Options.RuinedPortalSpawn.blocksDamagedOnRespawn - unsupportedPortalFrameBlocks.size)
                             .forEach {
-                                nether.setBlockAndUpdate(it, Blocks.BLACKSTONE.defaultBlockState())
+                                nether.setBlockAndUpdate(
+                                    it, degradationLootTable.getRandomItems(
+                                            LootParams.Builder(nether)
+                                                .withParameter(LootContextParams.ORIGIN, it.center)
+                                                .withParameter(LootContextParams.THIS_ENTITY, player)
+                                                .withLuck(player.luck)
+                                                .create(LootContextParamSets.EMPTY)
+                                        )
+                                        .firstNotNullOfOrNull { (it.item as? BlockItem)?.block?.defaultBlockState() }
+                                        ?: Blocks.AIR.defaultBlockState())
                             }
 
-                        unsupportedObsidian.forEach {
+                        unsupportedPortalFrameBlocks.forEach {
                             FallingBlockEntity.fall(nether, it, nether.getBlockState(it))
                         }
                     }

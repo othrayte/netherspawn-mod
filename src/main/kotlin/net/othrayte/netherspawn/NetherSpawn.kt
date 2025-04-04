@@ -1,5 +1,7 @@
 package net.othrayte.netherspawn
 
+import net.minecraft.data.loot.LootTableProvider
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets
 import net.neoforged.bus.api.SubscribeEvent
 import net.neoforged.fml.ModLoadingContext
 import net.neoforged.fml.common.EventBusSubscriber
@@ -25,6 +27,16 @@ object NetherSpawn {
         event.generator.addProvider(
             event.includeServer(),
             Tags.Blocks.Provider(event.generator.packOutput, event.lookupProvider, event.existingFileHelper)
+        )
+
+        event.generator.addProvider(event.includeServer(),
+            LootTableProvider(
+                event.generator.packOutput, setOf(),
+                listOf(LootTableProvider.SubProviderEntry(
+                    { lookupProvider -> LootTables(lookupProvider) },
+                    LootContextParamSets.EMPTY
+                )),
+                event.lookupProvider)
         )
     }
 }

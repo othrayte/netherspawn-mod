@@ -8,7 +8,7 @@ object Options {
 
     private val initialSpawnInNetherOption = builder
         .comment("Whether players should initially spawn in the nether")
-        .define("initial_spawn_in_nether", false)
+        .define("initial_spawn_in_nether", true)
     private val respawnInNetherOption = builder
         .comment("Whether players should respawn in the nether when they die in the nether")
         .define("respawn_in_nether", true)
